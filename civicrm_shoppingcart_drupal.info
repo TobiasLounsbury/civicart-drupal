@@ -1,0 +1,7 @@
+name = CiviCRM Shopping Cart Drupal Tokens
+description = Provide tokens for the CiviCRM Shopping Cart
+core = 7.x
+package = CiviCRM
+dependencies[] = civicrm (>=4.7)
+dependencies[] = token
+files[] = civicrm_shoppingcart_drupal.module

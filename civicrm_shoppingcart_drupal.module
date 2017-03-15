@@ -1,0 +1,40 @@
+<?php
+
+function civicrm_shoppingcart_drupal_token_info() {
+  $info['types']['civicart'] = array(
+    'name' => t('CiviCRM Shopping Cart'),
+    'description' => t('Tokens for use with the CiviCRM Shopping Cart.'),
+  );
+
+  /*
+  $info['tokens']['civicart']['example'] = array(
+    'name' => t('Example Token Title'),
+    'description' => t('Example CiviCRM Shopping Cart Token Description'),
+  );
+  */
+
+  $tokens = CRM_Shoppingcart_Tokens::getCartTokens();
+  foreach($tokens as $token => $title) {
+    $info['tokens']['civicart'][$token] = array(
+      'name' => $title,
+      //todo: Craft a way to handle descriptions
+      'description' => '',
+    );
+  }
+
+  return $info;
+}
+
+function civicrm_shoppingcart_drupal_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+
+  civicrm_initialize();
+
+  if ($type == 'civicart') {
+    foreach($tokens as $token) {
+      $replacements[$token] = CRM_Shoppingcart_Tokens::replaceItemToken($token);
+    }
+  }
+
+  return $replacements;
+}
