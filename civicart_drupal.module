@@ -50,6 +50,7 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
 
 
   if ($type == 'civicart') {
+    $addLibrary = false;
     foreach($tokens as $parsed => $fullToken) {
 
       //[civicart:item:5:full]
@@ -60,10 +61,21 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
 
       //Delegate content generation to civi functions
       $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($parts[1], $parts[0], $parts[2]);
+      $addLibrary = ($addLibrary || ($replacements[$fullToken]));
     }
 
+    //Add library resources to the page.
+    if($addLibrary) {
+      $resources = CRM_Civicart_Utils::getLibraryResources();
+      foreach($resources['js'] as $file) {
+        drupal_add_js($file, array("preprocess" => false));
+      }
 
+      foreach($resources['css'] as $file) {
+        drupal_add_css($file, array("preprocess" => false));
+      }
 
+    }
   }
 
   return $replacements;
