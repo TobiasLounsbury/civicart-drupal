@@ -53,27 +53,17 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
     foreach($tokens as $parsed => $fullToken) {
 
       //[civicart:item:5:full]
-      //[civicart:option:25:full]
-
-      $item = false;
-      $option = false;
+      //[civicart:option:25:button]
 
       //Parse the token
       $parts = explode(":", $parsed);
 
-      //Set the Item
-      if($parts[0] == "item") {
-        $item = $parts[1];
-      }
-
-      //Set the Option Number
-      if($parts[0] == "option") {
-        $option = $parts[1];
-      }
-
       //Delegate content generation to civi functions
-      $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($item, $option, $parts[2]);
+      $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($parts[1], $parts[0], $parts[2]);
     }
+
+
+
   }
 
   return $replacements;
