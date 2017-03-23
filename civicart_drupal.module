@@ -1,8 +1,13 @@
 <?php
 
 function civicart_drupal_token_info() {
+
+  if(!civicrm_initialize()) {
+    return;
+  }
+
   $info['types']['civicart'] = array(
-    'name' => t('CiviCRM Shopping Cart'),
+    'name' => t('CiviCart'),
     'description' => t('Tokens for use with the CiviCRM Shopping Cart.'),
   );
 
@@ -24,7 +29,7 @@ function civicart_drupal_token_info() {
     foreach($types as $type => $typeDescription) {
 
       $info['tokens']['civicart']["item:{$item['id']}:{$type}:{$item['name']}"] = array(
-        'name' => $item['label'],
+        'name' => "{$item['label']} - {$type}",
         'description' => str_replace("%NAME%", $item['label'], $typeDescription),
       );
 
@@ -39,16 +44,35 @@ function civicart_drupal_token_info() {
 function civicart_drupal_tokens($type, $tokens, array $data = array(), array $options = array()) {
   $replacements = array();
 
-  civicrm_initialize();
+  if(!civicrm_initialize()) {
+    return $replacements;
+  }
+
 
   if ($type == 'civicart') {
-    foreach($tokens as $token) {
+    foreach($tokens as $parsed => $fullToken) {
 
       //[civicart:item:5:full]
       //[civicart:option:25:full]
-      //Parse the token
 
-      $replacements[$token] = CRM_Civicart_Tokens::getItemContent($token);
+      $item = false;
+      $option = false;
+
+      //Parse the token
+      $parts = explode(":", $parsed);
+
+      //Set the Item
+      if($parts[0] == "item") {
+        $item = $parts[1];
+      }
+
+      //Set the Option Number
+      if($parts[0] == "option") {
+        $option = $parts[1];
+      }
+
+      //Delegate content generation to civi functions
+      $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($item, $option, $parts[2]);
     }
   }
 
