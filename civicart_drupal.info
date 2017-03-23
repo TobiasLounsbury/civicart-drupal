@@ -1,4 +1,4 @@
-name = CiviCRM Shopping Cart Drupal Tokens
+name = CiviCart - Drupal Tokens
 description = Provide tokens for the CiviCRM Shopping Cart
 core = 7.x
 package = CiviCRM
