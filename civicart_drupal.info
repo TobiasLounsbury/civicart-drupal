@@ -4,4 +4,4 @@ core = 7.x
 package = CiviCRM
 dependencies[] = civicrm (>=4.7)
 dependencies[] = token
-files[] = civicrm_shoppingcart_drupal.module
+files[] = civicart_drupal.module

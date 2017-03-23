@@ -1,0 +1,56 @@
+<?php
+
+function civicart_drupal_token_info() {
+  $info['types']['civicart'] = array(
+    'name' => t('CiviCRM Shopping Cart'),
+    'description' => t('Tokens for use with the CiviCRM Shopping Cart.'),
+  );
+
+  /*
+  $info['tokens']['civicart']['example'] = array(
+    'name' => t('Example Token Title'),
+    'description' => t('Example CiviCRM Shopping Cart Token Description'),
+  );
+  */
+
+  $items = CRM_Civicart_Tokens::getCartItems();
+  $types = array(
+    "full" => "Adds item description and 'Add to Cart' buttons for %NAME%",
+    "button" => "Adds 'Add to Cart' buttons for %NAME%",
+    "description" => "Adds item description for %NAME%"
+  );
+
+  foreach($items as $item) {
+    foreach($types as $type => $typeDescription) {
+
+      $info['tokens']['civicart']["item:{$item['id']}:{$type}:{$item['name']}"] = array(
+        'name' => $item['label'],
+        'description' => str_replace("%NAME%", $item['label'], $typeDescription),
+      );
+
+      //todo: Handle individual checkbox items
+
+    }
+  }
+
+  return $info;
+}
+
+function civicart_drupal_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+
+  civicrm_initialize();
+
+  if ($type == 'civicart') {
+    foreach($tokens as $token) {
+
+      //[civicart:item:5:full]
+      //[civicart:option:25:full]
+      //Parse the token
+
+      $replacements[$token] = CRM_Civicart_Tokens::getItemContent($token);
+    }
+  }
+
+  return $replacements;
+}
