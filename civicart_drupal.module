@@ -38,6 +38,17 @@ function civicart_drupal_token_info() {
     }
   }
 
+  $info['tokens']['civicart']["cart:count"] = array(
+    'name' => "Item Count",
+    'description' => "Returns the number of items in the cart",
+  );
+
+  $info['tokens']['civicart']["cart:url"] = array(
+    'name' => "Cart Url",
+    'description' => "Returns the url to send the user to view the cart",
+  );
+
+
   return $info;
 }
 
@@ -59,9 +70,24 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
       //Parse the token
       $parts = explode(":", $parsed);
 
-      //Delegate content generation to civi functions
-      $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($parts[1], $parts[0], $parts[2]);
-      $addLibrary = ($addLibrary || ($replacements[$fullToken]));
+      if($parts[0] == "cart") {
+
+        if($parts[1] == "url") {
+          $replacements[$fullToken] = CRM_Civicart_Utils::getCartLink();
+          continue;
+        }
+
+        if($parts[1] == "count") {
+          $replacements[$fullToken] = "<span class='civicart-cart-item-count'>" . CRM_Civicart_Utils::getCartCount() . "</span>";
+          continue;
+        }
+
+
+      } else {
+        //Delegate content generation to civi functions
+        $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($parts[1], $parts[0], $parts[2]);
+        $addLibrary = ($addLibrary || ($replacements[$fullToken]));
+      }
     }
 
     //Add library resources to the page.
