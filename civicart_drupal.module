@@ -18,7 +18,7 @@ function civicart_drupal_token_info() {
   );
   */
 
-  $items = CRM_Civicart_Tokens::getCartItems();
+  $items = CRM_Civicart_Tokens::getAllItems();
   $types = array(
     "full" => "Adds item description and 'Add to Cart' buttons for %NAME%",
     "button" => "Adds 'Add to Cart' buttons for %NAME%",
@@ -85,7 +85,8 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
 
       } else {
         //Delegate content generation to civi functions
-        $replacements[$fullToken] = CRM_Civicart_Tokens::getItemContent($parts[1], $parts[0], $parts[2]);
+        $item = CRM_Civicart_Tokens::getItemData($parts[1], $parts[0]);
+        $replacements[$fullToken] = CRM_Civicart_Tokens::renderItemContent($item, $parts[2]);
         $addLibrary = ($addLibrary || ($replacements[$fullToken]));
       }
     }
