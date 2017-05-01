@@ -1,11 +1,16 @@
 <?php
 
+/**
+ * Provide a list of our Tokens
+ */
 function civicart_drupal_token_info() {
 
   if(!civicrm_initialize()) {
     return;
   }
 
+
+  //Create the civicart type
   $info['types']['civicart'] = array(
     'name' => t('CiviCart'),
     'description' => t('Tokens for use with the CiviCRM Shopping Cart.'),
@@ -18,31 +23,44 @@ function civicart_drupal_token_info() {
   );
   */
 
-  $items = CRM_Civicart_Tokens::getAllItems();
+  //Fetch all the items
+  $items = CRM_Civicart_Items::getAllItems();
+  //Rendering types
   $types = array(
     "full" => "Adds item description and 'Add to Cart' buttons for %NAME%",
     "button" => "Adds 'Add to Cart' buttons for %NAME%",
     "description" => "Adds item description for %NAME%"
   );
 
+  //Create all the item tokens
   foreach($items as $item) {
     foreach($types as $type => $typeDescription) {
 
-      $info['tokens']['civicart']["item:{$item['id']}:{$type}:{$item['name']}"] = array(
+      $info['tokens']['civicart']["{$item['id']}::{$type}:{$item['name']}"] = array(
         'name' => "{$item['label']} - {$type}",
         'description' => str_replace("%NAME%", $item['label'], $typeDescription),
       );
 
-      //todo: Handle individual checkbox items
-
+      //Create individual tokens for each checkbox option
+      if($item['html_type'] == "CheckBox" && array_key_exists("options", $item) && !empty($item['options'])){
+        //todo: Handle individual checkbox items
+        foreach($item['options'] as $option) {
+          $info['tokens']['civicart']["{$item['id']}:{$option['id']}:{$type}:{$option['name']}"] = array(
+            'name' => "{$option['label']} - {$type}",
+            'description' => str_replace("%NAME%", $option['label'], $typeDescription),
+          );
+        }
+      }
     }
   }
 
+  //Cart Count Token
   $info['tokens']['civicart']["cart:count"] = array(
     'name' => "Item Count",
     'description' => "Returns the number of items in the cart",
   );
 
+  //Cart Link Token
   $info['tokens']['civicart']["cart:url"] = array(
     'name' => "Cart Url",
     'description' => "Returns the url to send the user to view the cart",
@@ -52,7 +70,16 @@ function civicart_drupal_token_info() {
   return $info;
 }
 
-function civicart_drupal_tokens($type, $tokens, array $data = array(), array $options = array()) {
+/**
+ * Do Token Replacement
+ *
+ * @param $type
+ * @param $tokens
+ * @param array $data
+ * @param array $options
+ * @return array
+ */
+function civicart_drupal_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
 
   if(!civicrm_initialize()) {
@@ -64,8 +91,8 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
     $addLibrary = false;
     foreach($tokens as $parsed => $fullToken) {
 
-      //[civicart:item:5:full]
-      //[civicart:option:25:button]
+      //[civicart:5::full]
+      //[civicart:5:25:button]
 
       //Parse the token
       $parts = explode(":", $parsed);
@@ -85,25 +112,68 @@ function civicart_drupal_tokens($type, $tokens, array $data = array(), array $op
 
       } else {
         //Delegate content generation to civi functions
-        $item = CRM_Civicart_Tokens::getItemData($parts[1], $parts[0]);
-        $replacements[$fullToken] = CRM_Civicart_Tokens::renderItemContent($item, $parts[2]);
+        $option = (is_numeric($parts[1])) ? $parts[1] : false;
+        $item = CRM_Civicart_Items::getItemData($parts[0], $option);
+        $replacements[$fullToken] = CRM_Civicart_Items::renderItemContent($item, $parts[2]);
         $addLibrary = ($addLibrary || ($replacements[$fullToken]));
       }
     }
 
     //Add library resources to the page.
     if($addLibrary) {
+      //Fetch the list of library resources
       $resources = CRM_Civicart_Utils::getLibraryResources();
+
+      //Add the Javascript file resources
       foreach($resources['js'] as $file) {
         drupal_add_js($file, array("preprocess" => false));
       }
 
+      //Add inline javascript
+      foreach($resources['inline'] as $code) {
+        drupal_add_js($code, "inline");
+      }
+
+      //Add StyleSheets
       foreach($resources['css'] as $file) {
         drupal_add_css($file, array("preprocess" => false));
       }
 
+      //Add the civicart_drupal specific js.
+      drupal_add_js(drupal_get_path("module","civicart_drupal") . "/civicart.drupal.js");
     }
   }
 
   return $replacements;
+}
+
+
+function civicart_drupal_menu () {
+
+  $items = array();
+
+  $items['civicart/add'] = array(
+    'page callback' => 'civicart_drupal_add_callback',
+    'access arguments' => array('access CiviCart'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
+function civicart_drupal_add_callback() {
+  if (isset($_POST) && array_key_exists("action", $_POST) && $_POST['action'] == "add"){
+    if(!civicrm_initialize()) {
+      return;
+    }
+
+    $id = CRM_Utils_Array::value("id", $_POST, false);
+    $qty = CRM_Utils_Array::value("quantity", $_POST, 1);
+    $option = CRM_Utils_Array::value("option", $_POST, false);
+
+    CRM_Civicart_Utils::addToCart($id, $option, $qty);
+    echo json_encode(array("status" => "success", "count" => CRM_Civicart_Utils::getCartCount()));
+    exit();
+  }
 }
