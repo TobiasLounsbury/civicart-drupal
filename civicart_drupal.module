@@ -24,11 +24,14 @@ function civicart_drupal_token_info() {
   */
 
   //Fetch all the items
-  try {
-    $items = CRM_Civicart_Items::getAllItems();
-  } catch (Exception $e) {
+
+  if(!class_exists("CRM_Civicart_Items")) {
     drupal_set_message(t('Unable to Load CiviCart. Please verify it is installed and active.'), 'error');
+    return $info;
   }
+
+  $items = CRM_Civicart_Items::getAllItems();
+
   //Rendering types
   $types = array(
     "full" => "Adds item description and 'Add to Cart' buttons for %NAME%",
@@ -91,71 +94,67 @@ function civicart_drupal_tokens($type, $tokens, $data = array(), $options = arra
   }
 
 
+  if(!class_exists("CRM_Civicart_Items") || !class_exists("CRM_Civicart_Utils")) {
+    drupal_set_message(t('Unable to Load CiviCart. Please verify it is installed and active.'), 'error');
+    return $replacements;
+  }
 
 
   if ($type == 'civicart') {
+    $addLibrary = false;
+    foreach ($tokens as $parsed => $fullToken) {
 
-    try {
+      //[civicart:5::full]
+      //[civicart:5:25:button]
 
-      $addLibrary = false;
-      foreach ($tokens as $parsed => $fullToken) {
+      //Parse the token
+      $parts = explode(":", $parsed);
 
-        //[civicart:5::full]
-        //[civicart:5:25:button]
+      if ($parts[0] == "cart") {
 
-        //Parse the token
-        $parts = explode(":", $parsed);
-
-        if ($parts[0] == "cart") {
-
-          if ($parts[1] == "url") {
-            $replacements[$fullToken] = CRM_Civicart_Utils::getCartLink();
-            continue;
-          }
-
-          if ($parts[1] == "count") {
-            $replacements[$fullToken] = "<span class='civicart-cart-item-count'>" . CRM_Civicart_Utils::getCartCount() . "</span>";
-            continue;
-          }
-
-
-        } else {
-          //Delegate content generation to civi functions
-          $option = (is_numeric($parts[1])) ? $parts[1] : false;
-          $item = CRM_Civicart_Items::getItemData($parts[0], $option);
-          $replacements[$fullToken] = CRM_Civicart_Items::renderItemContent($item, $parts[2]);
-          $addLibrary = ($addLibrary || ($replacements[$fullToken]));
+        if ($parts[1] == "url") {
+          $replacements[$fullToken] = CRM_Civicart_Utils::getCartLink();
+          continue;
         }
+
+        if ($parts[1] == "count") {
+          $replacements[$fullToken] = "<span class='civicart-cart-item-count'>" . CRM_Civicart_Utils::getCartCount() . "</span>";
+          continue;
+        }
+
+
+      } else {
+        //Delegate content generation to civi functions
+        $option = (is_numeric($parts[1])) ? $parts[1] : false;
+        $item = CRM_Civicart_Items::getItemData($parts[0], $option);
+        $replacements[$fullToken] = CRM_Civicart_Items::renderItemContent($item, $parts[2]);
+        $addLibrary = ($addLibrary || ($replacements[$fullToken]));
       }
-
-      //Add library resources to the page.
-      if ($addLibrary) {
-        //Fetch the list of library resources
-        $resources = CRM_Civicart_Utils::getLibraryResources();
-
-        //Add the Javascript file resources
-        foreach ($resources['js'] as $file) {
-          drupal_add_js($file, array("preprocess" => false));
-        }
-
-        //Add inline javascript
-        foreach ($resources['inline'] as $code) {
-          drupal_add_js($code, "inline");
-        }
-
-        //Add StyleSheets
-        foreach ($resources['css'] as $file) {
-          drupal_add_css($file, array("preprocess" => false));
-        }
-
-        //Add the civicart_drupal specific js.
-        drupal_add_js(drupal_get_path("module", "civicart_drupal") . "/civicart.drupal.js");
-      }
-
-    } catch (Exception $e) {
-      drupal_set_message(t('Error Replacing Token. Please verify CiviCart is installed and active.'), 'error');
     }
 
+    //Add library resources to the page.
+    if ($addLibrary) {
+      //Fetch the list of library resources
+      $resources = CRM_Civicart_Utils::getLibraryResources();
+
+      //Add the Javascript file resources
+      foreach ($resources['js'] as $file) {
+        drupal_add_js($file, array("preprocess" => false));
+      }
+
+      //Add inline javascript
+      foreach ($resources['inline'] as $code) {
+        drupal_add_js($code, "inline");
+      }
+
+      //Add StyleSheets
+      foreach ($resources['css'] as $file) {
+        drupal_add_css($file, array("preprocess" => false));
+      }
+
+      //Add the civicart_drupal specific js.
+      drupal_add_js(drupal_get_path("module", "civicart_drupal") . "/civicart.drupal.js");
+    }
   }
 
   return $replacements;
@@ -179,6 +178,11 @@ function civicart_drupal_menu () {
 function civicart_drupal_add_callback() {
   if (isset($_POST) && array_key_exists("action", $_POST) && $_POST['action'] == "add"){
     if(!civicrm_initialize()) {
+      return;
+    }
+
+    if(!class_exists("CRM_Civicart_Items") || !class_exists("CRM_Civicart_Utils")) {
+      drupal_set_message(t('Unable to Load CiviCart. Please verify it is installed and active.'), 'error');
       return;
     }
 
