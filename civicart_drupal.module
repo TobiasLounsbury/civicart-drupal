@@ -130,6 +130,8 @@ function civicart_drupal_tokens($type, $tokens, $data = array(), $options = arra
         if($item) {
           $replacements[$fullToken] = CRM_Civicart_Items::renderItemContent($item, $parts[2]);
           $addLibrary = ($addLibrary || ($replacements[$fullToken]));
+        } else {
+          $replacements[$fullToken] = "";
         }
       }
     }
